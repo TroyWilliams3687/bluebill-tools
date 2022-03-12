@@ -1,0 +1,25 @@
+// This file needs to be named Main.sublime-menu <- case sensitive
+[
+    {
+        "id": "tools",
+        "children":
+        [
+            {
+                "caption": "Bluebill",
+                "mnemonic": "B",
+                "id": "bluebill",
+                "children":
+                [
+                    {"command":"time_parsing", "caption":"Time Parsing", "mnemonic":"T"},
+                    {"command":"insert_date", "caption":"Insert Date", "mnemonic":"D"},
+                    {"command":"insert_time", "caption":"Insert Time"},
+                    {"command":"insert_uuid", "caption":"Insert UUID", "mnemonic":"U"},
+                    {"command":"select_empty_lines", "caption":"Select Empty Lines", "mnemonic":"E"},
+                    // {"command":"split_by_selection", "caption":"Split by Selection", "mnemonic":"S"},
+                    // {"command":"new_file_note", "caption":"Create New Note", "mnemonic":"N"},
+                    // {"command":"new_view_from_current", "caption":"Copy Note from Current", "mnemonic":"C"}
+                ]
+            }
+        ]
+    }
+]
