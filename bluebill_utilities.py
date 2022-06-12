@@ -29,7 +29,7 @@ follow the same naming pattern.
 https://www.sublimetext.com/docs/3/api_reference.html
 
 """
-
+import re
 import sublime
 import sublime_plugin
 import uuid
@@ -132,6 +132,41 @@ class InsertUuidCommand(sublime_plugin.TextCommand):
         sel = self.view.sel();
         for s in sel:
             self.view.run_command("bluebill_insert_text", {'start':s.a, 'text':generated_uuid})
+
+
+
+# ctrl+` -> view.run_command("create_todo")
+class CreateTodoCommand(sublime_plugin.TextCommand):
+    """
+    Given the selected text, transform it into a Notes TODO item.
+    """
+
+    def run(self, edit):
+
+        print("Creating TODO entry...")
+
+        for region in self.view.sel():
+
+            # If the selection region is empty, select the line
+            if region.empty():
+                current_line = self.view.line(region)
+                region = sublime.Region(current_line.a, current_line.b)
+
+                s = self.view.substr(region)
+
+            else:
+                # use the selected text
+                s = self.view.substr(region)
+
+            match = re.match(r"^(\s*)-(.*)$", s)
+
+            if match:
+                todo_line = match.group(1) + '- []' + match.group(2)
+
+            else:
+                todo_line = '- [] {}'.format(s)
+
+            self.view.replace(edit, region, todo_line)
 
 
 

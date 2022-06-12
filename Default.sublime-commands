@@ -3,4 +3,5 @@
     { "caption": "Time: Insert Current Time", "command": "insert_time" },
     { "caption": "Time: Time Parsing", "command": "time_parsing" },
     { "caption": "UUID: Insert UUID", "command": "insert_uuid" },
+    { "caption": "TODO: Transform line to NOTES TODO Entry", "command": "create_todo" },
 ]
