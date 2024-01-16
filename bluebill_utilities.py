@@ -29,9 +29,10 @@ follow the same naming pattern.
 https://www.sublimetext.com/docs/3/api_reference.html
 
 """
-import re
 import sublime
 import sublime_plugin
+
+import re
 import uuid
 from datetime import datetime
 from random import randint
@@ -168,7 +169,58 @@ class CreateTodoCommand(sublime_plugin.TextCommand):
 
             self.view.replace(edit, region, todo_line)
 
+# ----
 
+# ctrl+` -> view.run_command("open_links")
+class OpenLinksCommand(sublime_plugin.TextCommand):
+    """
+    If the selected text is a file path, folder path open it.
+
+    behavior:
+    - assumes cursor is placed in the path i.e. user clicks the path
+
+    - assumes user selects the path
+
+
+    """
+
+    def run(self, edit):
+
+        print("Opening Link...")
+
+        for region in self.view.sel():
+
+            print("region.a: ", region.a)
+            print("region.b: ", region.b)
+            print("region.size: ", region.size())
+            print("region.empty:", region.empty())
+
+            if region.empty():
+
+                # assume that the cursor is placed in the middle of
+                # text, we want to select from both sides till we hit a
+                # whitespace
+
+                current_line = self.view.line(region)
+
+                region = sublime.Region(current_line.a, current_line.b)
+
+                s = self.view.substr(region)
+
+            else:
+                # use the selected text
+                s = self.view.substr(region)
+
+            # match = re.match(r"^(\s*)-(.*)$", s)
+
+            # if match:
+            #     todo_line = match.group(1) + '- []' + match.group(2)
+
+            # else:
+            #     todo_line = '- [] {}'.format(s)
+
+
+# ----
 
 # ctrl+` -> view.run_command("select_empty_lines")
 class SelectEmptyLinesCommand(sublime_plugin.TextCommand):
