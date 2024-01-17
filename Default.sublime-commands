@@ -4,4 +4,6 @@
     { "caption": "Time: Time Parsing", "command": "time_parsing" },
     { "caption": "UUID: Insert UUID", "command": "insert_uuid" },
     { "caption": "TODO: Transform line to NOTES TODO Entry", "command": "create_todo" },
+    { "caption": "OpenLinks: Open file/folder links", "command": "open_links" },
+
 ]

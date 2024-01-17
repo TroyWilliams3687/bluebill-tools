@@ -32,8 +32,13 @@ https://www.sublimetext.com/docs/3/api_reference.html
 import sublime
 import sublime_plugin
 
+import bisect
 import re
 import uuid
+import os
+import subprocess
+import platform
+
 from datetime import datetime
 from random import randint
 from string import Template
@@ -171,6 +176,57 @@ class CreateTodoCommand(sublime_plugin.TextCommand):
 
 # ----
 
+def print_region_info(region):
+    """
+    """
+    print("region.a: ", region.a)
+    print("region.b: ", region.b)
+    print("region.xpos: ", region.xpos)
+    print("region.size: ", region.size())
+    print("region.empty:", region.empty())
+
+def find_whitespace_positions(input_string):
+    """
+    """
+
+    # Define the regex pattern for matching whitespace
+    whitespace_pattern = re.compile(r'\s+')
+
+    # Use finditer to find all matches in the input string
+    matches = whitespace_pattern.finditer(input_string)
+
+    # Extract and return the positions of each match
+    positions = [match.start() for match in matches]
+
+    return positions
+
+def open_with_default_app(path):
+    """
+    given a path, attempt to open it using the default system
+    application. Determine the appropriate command based on the
+    operating system
+    """
+    if platform.system() == "Darwin":  # macOS
+        command = ["open", path]
+
+    elif platform.system() == "Windows":
+        command = ["start", "", path, "/B", "/WAIT"]
+
+    elif platform.system() == "Linux":
+        command = ["xdg-open", path]
+
+    else:
+        print("Unsupported operating system :(")
+        return
+
+    try:
+        subprocess.call(command)
+
+    except subprocess.CalledProcessError as e:
+        print("Error: {}".format(e))
+
+
+
 # ctrl+` -> view.run_command("open_links")
 class OpenLinksCommand(sublime_plugin.TextCommand):
     """
@@ -181,6 +237,12 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
 
     - assumes user selects the path
 
+    - We should be able to handle paths
+    - we should be able to handle paths that are in a selection
+    - We should be able to handle paths that are relative to the project
+    - We should be able to handle paths defined in markdown links
+    - We should be able to handle paths in backticks
+
 
     """
 
@@ -190,10 +252,7 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
 
         for region in self.view.sel():
 
-            print("region.a: ", region.a)
-            print("region.b: ", region.b)
-            print("region.size: ", region.size())
-            print("region.empty:", region.empty())
+            potential_path = None
 
             if region.empty():
 
@@ -201,23 +260,89 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
                 # text, we want to select from both sides till we hit a
                 # whitespace
 
+                # If the region is empty, region.a == region.b will be
+                # the cursor position
+
+                # select the current line
                 current_line = self.view.line(region)
+                # print_region_info(current_line)
 
-                region = sublime.Region(current_line.a, current_line.b)
+                # translate the cursor position to the line coordinate
+                # system. Essentially we are calculation the column
+                # position
+                cursor_position = region.a - current_line.a
 
-                s = self.view.substr(region)
+                # the column is 1 based
+                # print(cursor_position + 1)
+
+                # get the string representing the entire line
+                full_line_text = self.view.substr(current_line)
+
+                # display where the cursor is on the string representing
+                # the line
+                # print(s)
+                # print(s[:cursor_position]) # start of line to cursor
+                # print(s[cursor_position:]) # cursor to end of line
+
+                # ----
+                # Find whitespaces by index
+
+                whitespaces = find_whitespace_positions(full_line_text)
+                # print(whitespaces)
+
+                if len(whitespaces) == 0:
+                    potential_path = full_line_text
+
+                else:
+
+                    left_items = [index for index in whitespaces if index <= cursor_position]
+                    left_index = max(left_items) if left_items else 0
+
+
+                    right_items = [index for index in whitespaces if index >= cursor_position]
+                    right_index = min(right_items) if right_items else len(full_line_text)
+
+                    # # figure out where in the list of whitespaces the cursor would fit
+                    # insert_cursor = bisect.bisect_left(whitespaces, cursor_position)
+                    # print(insert_cursor)
+
+                    potential_path = full_line_text[left_index:right_index].lstrip()
+                    # print(potential_path)
 
             else:
                 # use the selected text
-                s = self.view.substr(region)
+                potential_path = self.view.substr(region).strip()
 
-            # match = re.match(r"^(\s*)-(.*)$", s)
+            # the strings may have %20 sometimes that are the html for
+            # spaces in markdown
+            potential_path = potential_path.replace("%20", " ")
 
-            # if match:
-            #     todo_line = match.group(1) + '- []' + match.group(2)
+            if potential_path is not None:
+                print(potential_path)
 
-            # else:
-            #     todo_line = '- [] {}'.format(s)
+                # if os.path.isfile(potential_path):
+                #     print('Is a file')
+
+                # if os.path.isdir(potential_path):
+                #     print('Is a folder')
+
+                if os.path.exists(potential_path):
+                    open_with_default_app(potential_path)
+                    return
+
+                # Is the path a relative path of the project?
+
+                project_properties = self.view.window().extract_variables()
+
+                if "folder" in project_properties:
+
+                    root = project_properties["folder"]
+                    full_path = os.path.join(root, potential_path)
+                    full_path = os.path.normpath(full_path)
+
+                    if os.path.exists(full_path):
+                        open_with_default_app(full_path)
+                        return
 
 
 # ----
