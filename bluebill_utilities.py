@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
 #-*- coding:utf-8 -*-
 
-# -----------
-# SPDX-License-Identifier: MIT
-# Copyright (c) 2020 Troy Williams
-
-# uuid       = cf11480a-9d34-11ea-93a6-af6304d033a5
-# author     = Troy Williams
-# email      = troy.williams@bluebill.net
-# date       = 2020-05-23
-# -----------
-
 """
 Useful utilities
 
@@ -43,57 +33,71 @@ from datetime import datetime
 from random import randint
 from string import Template
 
-# NOTE: Need to install PackageDev to get access to the PathLib for Sublime v3.2.2 Build 3211
-# from pathlib import Path
+# NOTE: Need to install PackageDev to get access to the PathLib for
+# Sublime v3.2.2 Build 3211 from pathlib import Path
 
-# key bindings
+
+# Suggested Key Bindings
 # [
 #     { "keys": ["ctrl+shift+t"], "command": "time_parsing" },
 #     { "keys": ["ctrl+k","ctrl+d"], "command":"insert_date"},
-#     { "keys": ["ctrl+k","ctrl+t"], "command":"insert_time"},
+#     { "keys": ["ctrl+k","ctrl+b"], "command":"insert_time"},
 #     { "keys": ["ctrl+k","ctrl+j"], "command":"insert_uuid"},
-#     { "keys": ["ctrl+k","ctrl+s"], "command":"split_by_selection"},
-#     { "keys": ["ctrl+k","ctrl+a"], "command":"split_by_selection_and_append"},
-#     { "keys": ["ctrl+k","ctrl+k"], "command":"select_empty_lines"},
+#     { "keys": ["ctrl+k", "ctrl+t"], "command": "title_case" },
+#     { "keys": ["ctrl+t", "ctrl+t"], "command": "create_todo" },
+#     { "keys": ["ctrl+t", "ctrl+r"], "command": "open_links" },
 # ]
 
 
-# ctrl+` -> view.run_command("bluebill_insert_text", {'start': start_point, 'text': new_text})
-class BluebillInsertTextCommand(sublime_plugin.TextCommand):
+# # ctrl+` -> view.run_command("bluebill_insert_text", {'start': start_point, 'text': new_text})
+# class BluebillInsertTextCommand(sublime_plugin.TextCommand):
+#     """
+#     The Bluebill insert text command implementation.
+
+#     This is basically a method used by other commands. This probably should have been a function call instead
+
+#     """
+
+#     def run(self, edit, start, text):
+#         """
+
+#         # Parameters
+
+#             edit - Edit
+#                 - The edit object to identify this operation.
+
+#             start - int
+#                 - The beginning of the Region to insert the text into.
+
+#             text str
+#                 - The text to insert.
+
+#         # Usage
+
+#         view.run_command("bluebill_insert_text", {'start': start_point, 'text': new_text})
+
+#         """
+#         print(start)
+#         print(text)
+
+#         self.view.insert(edit, start, text)
+#         print('inserted...')
+
+
+def _insert_text(view, edit, start, text):
     """
-    The Bluebill insert text command implementation.
+    This simple method is used to insert text into the view.
     """
 
-    def run(self, edit, start, text):
-        """
-
-        # Parameters
-
-            edit - Edit
-                - The edit object to identify this operation.
-
-            start - int
-                - The beginning of the Region to insert the text into.
-
-            text str
-                - The text to insert.
-
-        # Usage
-
-        view.run_command("bluebill_insert_text", {'start': start_point, 'text': new_text})
-
-        """
-        print(start)
-        print(text)
-
-        self.view.insert(edit, start, text)
-        print('inserted...')
+    view.insert(edit, start, text)
+    # print('inserted...')
 
 
 # ctrl+` -> view.run_command("insert_date")
 class InsertDateCommand(sublime_plugin.TextCommand):
     """
-    Insert the current date in isoformat at the cursor location
+    Insert the current date in iso format (YYYY-MM-DD) at all the cursor
+    locations.
     """
 
     def run(self, edit):
@@ -102,15 +106,19 @@ class InsertDateCommand(sublime_plugin.TextCommand):
 
         current_date = datetime.now().date().isoformat()
 
-        sel = self.view.sel();
-        for s in sel:
-            self.view.run_command("bluebill_insert_text", {'start':s.a, 'text':current_date})
+        for s in self.view.sel():
+
+            _insert_text(self.view, edit, s.a, current_date)
+
+
 
 
 # ctrl+` -> view.run_command("insert_time")
 class InsertTimeCommand(sublime_plugin.TextCommand):
     """
-    Insert the current time in 24hr format with no separator, i.e. 1634 instead of 16:34
+    Insert the current time in 24hr format with no separator, i.e. 1634
+    instead of 16:34 at all the cursor locations (same time at each
+    one).
     """
 
     def run(self, edit):
@@ -119,15 +127,13 @@ class InsertTimeCommand(sublime_plugin.TextCommand):
 
         current_time = datetime.now().time().strftime('%H%M')
 
-        sel = self.view.sel();
-        for s in sel:
-            self.view.run_command("bluebill_insert_text", {'start':s.a, 'text':current_time})
-
+        for s in self.view.sel():
+            _insert_text(self.view, edit, s.a, current_time)
 
 # ctrl+` -> view.run_command("insert_uuid")
 class InsertUuidCommand(sublime_plugin.TextCommand):
     """
-    Insert the current time in 24hr format with no separator, i.e. 1634 instead of 16:34
+    Insert a UUID at all the cursor locations.
     """
 
     def run(self, edit):
@@ -135,16 +141,19 @@ class InsertUuidCommand(sublime_plugin.TextCommand):
         print("Inserting UUID...")
         generated_uuid = str(uuid.uuid1())
 
-        sel = self.view.sel();
-        for s in sel:
-            self.view.run_command("bluebill_insert_text", {'start':s.a, 'text':generated_uuid})
-
+        for s in self.view.sel():
+            _insert_text(self.view, edit, s.a, generated_uuid)
 
 
 # ctrl+` -> view.run_command("create_todo")
 class CreateTodoCommand(sublime_plugin.TextCommand):
     """
     Given the selected text, transform it into a Notes TODO item.
+
+    - [] todo item
+
+    Basically it will add the dash and square brackets.
+
     """
 
     def run(self, edit):
@@ -176,17 +185,19 @@ class CreateTodoCommand(sublime_plugin.TextCommand):
 
 # ----
 
-def print_region_info(region):
-    """
-    """
-    print("region.a: ", region.a)
-    print("region.b: ", region.b)
-    print("region.xpos: ", region.xpos)
-    print("region.size: ", region.size())
-    print("region.empty:", region.empty())
+# def print_region_info(region):
+#     """
+#     """
+#     print("region.a: ", region.a)
+#     print("region.b: ", region.b)
+#     print("region.xpos: ", region.xpos)
+#     print("region.size: ", region.size())
+#     print("region.empty:", region.empty())
 
 def find_whitespace_positions(input_string):
     """
+    Given the string, return a list of index numbers for each location
+    of whitespace
     """
 
     # Define the regex pattern for matching whitespace
@@ -237,13 +248,11 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
 
     - assumes user selects the path
 
-    - We should be able to handle paths
-    - we should be able to handle paths that are in a selection
-    - We should be able to handle paths that are relative to the project
+    - [x] We should be able to handle paths
+    - [x] we should be able to handle paths that are in a selection
+    - [x] We should be able to handle paths that are relative to the project
     - We should be able to handle paths defined in markdown links
-    - We should be able to handle paths in backticks
-
-
+    - We should be able to handle paths in back ticks or quotes (single and double)
     """
 
     def run(self, edit):
@@ -320,14 +329,9 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
             if potential_path is not None:
                 print(potential_path)
 
-                # if os.path.isfile(potential_path):
-                #     print('Is a file')
-
-                # if os.path.isdir(potential_path):
-                #     print('Is a folder')
-
                 if os.path.exists(potential_path):
                     open_with_default_app(potential_path)
+                    print('Opening absolute path...')
                     return
 
                 # Is the path a relative path of the project?
@@ -338,10 +342,14 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
 
                     root = project_properties["folder"]
                     full_path = os.path.join(root, potential_path)
+
+                    # normalize the path as we might have .. or . or ./
+                    # in it...
                     full_path = os.path.normpath(full_path)
 
                     if os.path.exists(full_path):
                         open_with_default_app(full_path)
+                        print('Opening relative path...')
                         return
 
 
