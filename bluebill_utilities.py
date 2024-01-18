@@ -209,7 +209,70 @@ def find_whitespace_positions(input_string):
     # Extract and return the positions of each match
     positions = [match.start() for match in matches]
 
-    return positions
+    return positions if len(positions) > 0 else None
+
+
+
+def find_largest_quoted_substring(input_string):
+    """
+    Find the largest substring in single quotes, double quotes, or back
+    ticks (matching pairs).
+
+    Returns the start and end index of the substring if there is a match
+    else it returns None.
+    """
+
+    match = re.search(r'([\'\"`])(.*?)\1', input_string)
+
+    if match:
+
+        return match.start(2), match.end(2)
+
+    else:
+
+        return None
+
+
+
+def find_markdown_links(input_string):
+    """
+    """
+
+    markdown_link_pattern = re.compile(r"\[(?P<text>[^\]]+)\]\((?P<url>[^)]+)\)")
+    matches = markdown_link_pattern.finditer(input_string)
+
+    result = []
+
+    for match in matches:
+        result.append(
+            (
+                match.group('text'),
+                match.group('url'),
+                match.start(),
+                match.end(),
+            )
+        )
+
+    return result or None
+
+
+
+# def find_largest_quoted_substring(input_string, index):
+#     """
+#     Find the largest substring in single quotes, double quotes, or back
+#     ticks (matching pairs)
+#     """
+
+#     match = re.search(r'([\'\"`])(.*?)\1', input_string)
+#     largest_quoted_substring = match.group(2) if match else ''
+
+#     # Get the substring around the provided index
+#     start_index = max(0, index - len(largest_quoted_substring))
+#     end_index = min(len(input_string), index + len(largest_quoted_substring))
+#     substring_around_index = input_string[start_index:end_index]
+
+#     return largest_quoted_substring, substring_around_index
+
 
 def open_with_default_app(path):
     """
@@ -266,7 +329,8 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
             if region.empty():
 
                 # assume that the cursor is placed in the middle of
-                # text, we want to select from both sides till we hit a
+                # path, we want to select all of the text towards the
+                # beginning and end of the line until we hit a
                 # whitespace
 
                 # If the region is empty, region.a == region.b will be
@@ -287,36 +351,54 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
                 # get the string representing the entire line
                 full_line_text = self.view.substr(current_line)
 
-                # display where the cursor is on the string representing
-                # the line
-                # print(s)
-                # print(s[:cursor_position]) # start of line to cursor
-                # print(s[cursor_position:]) # cursor to end of line
+                # ---
+                quoted_string = find_largest_quoted_substring(full_line_text)
+                # print("quoted_string: ", full_line_text[slice(*quoted_string)])
 
-                # ----
-                # Find whitespaces by index
+                markdown_links = find_markdown_links(full_line_text)
 
-                whitespaces = find_whitespace_positions(full_line_text)
-                # print(whitespaces)
-
-                if len(whitespaces) == 0:
-                    potential_path = full_line_text
-
-                else:
-
-                    left_items = [index for index in whitespaces if index <= cursor_position]
-                    left_index = max(left_items) if left_items else 0
+                potential_path = None
 
 
-                    right_items = [index for index in whitespaces if index >= cursor_position]
-                    right_index = min(right_items) if right_items else len(full_line_text)
 
-                    # # figure out where in the list of whitespaces the cursor would fit
-                    # insert_cursor = bisect.bisect_left(whitespaces, cursor_position)
-                    # print(insert_cursor)
 
-                    potential_path = full_line_text[left_index:right_index].lstrip()
-                    # print(potential_path)
+                if quoted_string:
+                    start_index, end_index = quoted_string
+                    potential_path = full_line_text[start_index: end_index]
+
+                if markdown_links:
+
+                    for md_link in markdown_links:
+                        link_text, link_url, start_index, end_index = md_link
+                        if start_index <= cursor_position <= end_index:
+                            potential_path = link_url
+                            break
+
+                if potential_path is None:
+                    # ----
+                    # Find white spaces by index
+
+                    whitespaces = find_whitespace_positions(full_line_text)
+                    # print(whitespaces)
+
+                    if whitespaces is None:
+                        potential_path = full_line_text
+
+                    else:
+
+                        left_items = [index for index in whitespaces if index <= cursor_position]
+                        left_index = max(left_items) if left_items else 0
+
+
+                        right_items = [index for index in whitespaces if index >= cursor_position]
+                        right_index = min(right_items) if right_items else len(full_line_text)
+
+                        # # figure out where in the list of whitespaces the cursor would fit
+                        # insert_cursor = bisect.bisect_left(whitespaces, cursor_position)
+                        # print(insert_cursor)
+
+                        potential_path = full_line_text[left_index:right_index].lstrip()
+                        # print(potential_path)
 
             else:
                 # use the selected text
@@ -346,6 +428,7 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
                     # normalize the path as we might have .. or . or ./
                     # in it...
                     full_path = os.path.normpath(full_path)
+                    # print('norm: ', full_path)
 
                     if os.path.exists(full_path):
                         open_with_default_app(full_path)
