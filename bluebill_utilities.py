@@ -280,11 +280,14 @@ def open_with_default_app(path):
     application. Determine the appropriate command based on the
     operating system
     """
+
     if platform.system() == "Darwin":  # macOS
         command = ["open", path]
 
     elif platform.system() == "Windows":
-        command = ["start", "", path, "/B", "/WAIT"]
+        # command = ["start", "", path, "/B", "/WAIT"]
+        os.startfile(path)
+        return
 
     elif platform.system() == "Linux":
         command = ["xdg-open", path]
@@ -294,6 +297,7 @@ def open_with_default_app(path):
         return
 
     try:
+
         subprocess.call(command)
 
     except subprocess.CalledProcessError as e:
@@ -428,7 +432,6 @@ class OpenLinksCommand(sublime_plugin.TextCommand):
                     # normalize the path as we might have .. or . or ./
                     # in it...
                     full_path = os.path.normpath(full_path)
-                    # print('norm: ', full_path)
 
                     if os.path.exists(full_path):
                         open_with_default_app(full_path)
